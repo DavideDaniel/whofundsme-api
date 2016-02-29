@@ -1,0 +1,20 @@
+{
+  "name": "whofundsme-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "api for whofundsme",
+  "main": "api.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "body-parser": "~1.10.2",
+    "cors": "^2.5.3",
+    "express": "~4.11.1",
+    "jade": "~1.9.1",
+    "mongodb": "^2.0.27",
+    "mongoose": "^4.0.1",
+    "request": "^2.55.0"
+  },
+  "author": "David Daniel <davidedaniel@gmail.com> (http://davidedaniel.github.io)"
+}

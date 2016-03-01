@@ -1,9 +1,7 @@
 var mongoose = require('mongoose');
-var bio_id = { type: String, index: { unique: true }};
-var crpId = { type: String, index: { unique: true }};
 var LegislatorSchema = new mongoose.Schema({
-    bioguide_id: bio_id,
-    crp_id: crpId,
+    bioguide_id: String,
+    crp_id: { type: String, index: { unique: true }},
     first_name: String,
     last_name: String,
     state_name: String,

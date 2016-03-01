@@ -10,7 +10,7 @@ const _=require('lodash');
 
 const MONIES = 'MONIES';
 const CONTRIBUTORS = 'CONTRIBUTORS';
-const
+
 // mongodb connection and log msg to notify us
 mongoose.connect('mongodb://localhost/whofundsme', function(err) {
   if (err) {

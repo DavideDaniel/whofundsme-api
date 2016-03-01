@@ -5,6 +5,8 @@ var mongoose = require('mongoose');
 var sunKey = process.env.SUNLIGHT;
 var openKey = process.env.OPENSECRETS;
 var request = require('request');
+var axios = require('axios');
+var _=require('lodash');
 // mongodb connection and log msg to notify us
 mongoose.connect('mongodb://localhost/whofundsme', function(err) {
   if (err) {
@@ -37,7 +39,7 @@ function populateLegislators() {
         var senatorObj = JSON.parse(data);
         console.log(senatorObj);
         var results = senatorObj.results;
-        console.log(results);
+
         for (var i = 0; i < results.length; i++) {
           var legislator = new Legislator({
             bioguide_id: results[i].bioguide_id,
@@ -56,7 +58,7 @@ function populateLegislators() {
             twitter_id: results[i].twitter_id
           });
           legislator.save(function(err, post) {
-            if (err) return console.error(err);
+            if (err) console.error(err);
           });
         }
       }
@@ -69,6 +71,24 @@ router.get('/addAllLegislators', function(req, res, next) {
 });
 // CREATE
 // search by state
+
+function addEverything(){
+  var p = Legislator.find((err,data)=>{
+    if(err) console.error(err);
+    let allLegs = _(data)
+      .filter({state:'OR'})
+      .map((item) => {
+        return item.last_name
+      }).value()
+      return allLegs
+
+  }).then(value => {
+
+  })
+  // p.resolve(d=>{console.log(d);})
+}
+
+
 router.get('/addLegislatorsByState/:state', function(req, res) {
   var state = req.params.state;
   var sunStateurl = 'https://congress.api.sunlightfoundation.com/legislators?fields=&apikey=' + sunKey + '&state=' + state;
@@ -94,7 +114,7 @@ router.get('/addLegislatorsByState/:state', function(req, res) {
           twitter_id: results[i].twitter_id
         });
         legislator.save(function(err) {
-          if (err) return console.error(err);
+          if (err) console.error(err);
         });
       }
       res.redirect('/api/index/');
@@ -105,7 +125,7 @@ router.get('/addLegislatorsByState/:state', function(req, res) {
 router.get('/addLegislator/:last_name', function(req, res, next) {
   var name = toTitleCase(req.params.last_name);
   var sunurl = 'https://congress.api.sunlightfoundation.com/legislators?fields=&apikey=' + sunKey + '&last_name=' + name;
-  request(sunurl, function(error, response, data) {
+  axios.get(sunurl, function(error, response, data) {
     var senatorObj = JSON.parse(data);
     var results = senatorObj.results;
     if (!error && response.statusCode == 200) {
@@ -128,13 +148,18 @@ router.get('/addLegislator/:last_name', function(req, res, next) {
       console.log(legislator);
       legislator.save(function(err, post) {
         if (err) {
-          return console.error(err);
+          console.error(err);
         }
       });
-      // if (results.length === 1) {
-      //     Legislator.create(results, function(err, post))
-      // }
     }
+  }).then(r =>{
+    let crp_ids = r.data.results.map((item) => {
+      return item.crp_id
+    });
+    addAllData(crp_ids).then(value => {
+      console.log(value);
+    });
+    res.json(r.data.results);
   });
 });
 // READ
@@ -149,7 +174,7 @@ router.get('/index', function(req, res, next) {
 // single legislator
 router.get('/legislators/:id', function(req, res, next) {
   Legislator.findById(req.params.id, function(err, data) {
-    if (err) return console.error(err);
+    if (err) console.error(err);
     res.json({
       result: data
     });
@@ -157,14 +182,14 @@ router.get('/legislators/:id', function(req, res, next) {
 });
 router.get('/legislatorByCrpId/:crp_id', function(req, res, next) {
   Legislator.find({crp_id:req.params.crp_id}, function(err, data) {
-    if (err) return console.error(err);
+    if (err) console.error(err);
     console.log(data[0]);
     res.json(data[0]);
   });
 });
 router.get('/addAllDataByCrpId/:crp_id', function(req, res, next) {
   Legislator.find({crp_id:req.params.crp_id}, function(err, data) {
-    if (err) return console.error(err);
+    if (err) console.error(err);
     var cids = [req.params.crp_id];
     var promised = new Promise(function(resolve,reject){
       try {
@@ -185,7 +210,7 @@ router.get('/legislators*', function(req, res, next) {
 
   var query = req.query;
   var legislators = Legislator.find(query, function(err, data) {
-    if (err) return console.error(err);
+    if (err) console.error(err);
     console.log(query, data.length);
     res.json(data);
   });
@@ -205,13 +230,13 @@ function addBills(bioIds) {
         json: true
       }, function(error, response, json) {
         if (error) {
-          return console.error(error);
+          console.error(error);
         }
         console.log(response.statusCode);
         if (!error && response.statusCode == 200) {
           var billObj = json;
           var results = billObj.results;
-          // console.log(results);
+          //
           var bills = [];
           for (var j = 0; j < results.length; j++) {
             var bill = {
@@ -234,7 +259,7 @@ function addBills(bioIds) {
             }
           }, function(err) {
             if (err) {
-              return console.error(err);
+              console.error(err);
             }
             console.log('updated: ' + bio_id);
           })
@@ -247,6 +272,7 @@ function addBills(bioIds) {
   console.log('bills done');
 };
 // function to return all data
+
 function addAllData(cids) {
   console.log('inside the function ' + cids.length);
   var addIndustries; // set vars
@@ -265,10 +291,10 @@ function addAllData(cids) {
       }, function(error, response, json) {
         if (error) {
           console.log('there was an error');
-          return console.error(error);
+          console.error(error);
         }
         console.log(response.statusCode);
-        console.log(json);
+
         if (!error && response.statusCode == 200) {
           var industriesObj = json;
           var results = industriesObj.response.industries.industry;
@@ -290,7 +316,7 @@ function addAllData(cids) {
             }
           }, function(err) {
             if (err) {
-              return console.error(err);
+              console.error(err);
             };
             console.log('industry done for: ' + cid);
           });
@@ -306,14 +332,14 @@ function addAllData(cids) {
       }, function(error, response, json) {
         if (error) {
           console.log('there was an error');
-          return console.error(error);
+          console.error(error);
         }
         console.log(response.statusCode);
-        console.log(json);
+
         if (!error && response.statusCode == 200) {
           var sectorsObj = json;
           var results = sectorsObj.response.sectors.sector;
-          console.log(results);
+
           var sectors = [];
           for (var k = 0; k < results.length; k++) {
             var sector = {
@@ -332,7 +358,7 @@ function addAllData(cids) {
             }
           }, function(err) {
             if (err) {
-              return console.error(err);
+              console.error(err);
             };
             console.log('sectors done for ' + cid);
           });
@@ -348,14 +374,14 @@ function addAllData(cids) {
       }, function(error, response, json) {
         if (error) {
           console.log('there was an error');
-          return console.error(error);
+          console.error(error);
         }
         console.log(response.statusCode);
-        console.log(json);
+
         if (!error && response.statusCode == 200) {
           var contributorsObj = json;
           var results = contributorsObj.response.contributors.contributor;
-          // console.log(results);
+          //
           var contributors = [];
           for (var l = 0; l < results.length; l++) {
             var contributor = {
@@ -373,7 +399,7 @@ function addAllData(cids) {
             }
           }, function(err) {
             if (err) {
-              return console.error(err);
+              console.error(err);
             };
             console.log('contributors done for ' + cid);
           });
@@ -390,10 +416,10 @@ function addAllData(cids) {
       }, function(error, response, json) {
         if (error) {
           console.log('there was an error');
-          return console.error(error);
+          console.error(error);
         }
         console.log(response.statusCode);
-        console.log(json);
+
         if (!error && response.statusCode == 200) {
           var summaryObj = json;
           var result = summaryObj.response.summary['@attributes'];
@@ -415,7 +441,7 @@ function addAllData(cids) {
             }
           }, function(err) {
             if (err) {
-              return console.error(err);
+              console.error(err);
             };
             console.log(monies + '\n added for ' + cid);
           });
@@ -435,7 +461,7 @@ router.get('/addAllData/:party/:chamber/:state', function(req, res, next) {
     var bioguide_ids = [];
     var cids = [];
     if (err) {
-      return console.error(err);
+      console.error(err);
     };
     var legislators = data;
     for (var i = 0; i < legislators.length; i++) {
@@ -453,7 +479,7 @@ router.get('/senatorDataByState/:state', function(req, res, next) {
     var bioguide_ids = [];
     var cids = [];
     if (err) {
-      return console.error(err);
+      console.error(err);
     };
     var legislators = data;
     for (var i = 0; i < legislators.length; i++) {
@@ -471,7 +497,7 @@ router.get('/addAllLegislators/:state', function(req, res, next) {
     var bioguide_ids = [];
     var cids = [];
     if (err) {
-      return console.error(err);
+      console.error(err);
     };
     var legislators = data;
     for (var i = 0; i < legislators.length; i++) {
@@ -489,7 +515,7 @@ router.get('/allLegislators/:state', function(req, res, next) {
     var bioguide_ids = [];
     var cids = [];
     if (err) {
-      return console.error(err);
+      console.error(err);
     };
     var legislators = data;
     for (var i = 0; i < legislators.length; i++) {
@@ -507,7 +533,7 @@ router.get('/billDataByState/:state', function(req, res, next) {
   Legislator.where('state').equals(req.params.state).exec(function(err, data) {
     var bioguide_ids = [];
     if (err) {
-      return console.error(err);
+      console.error(err);
     };
     var legislators = data;
     for (var i = 0; i < legislators.length; i++) {
@@ -523,7 +549,7 @@ router.get('/billDataByChamber/:chamber', function(req, res, next) {
   Legislator.where('chamber').equals(req.params.chamber).exec(function(err, data) {
     var bioguide_ids = [];
     if (err) {
-      return console.error(err);
+      console.error(err);
     };
     var legislators = data;
     for (var i = 0; i < legislators.length; i++) {
@@ -563,7 +589,7 @@ router.get('/addbills/:id', function(req, res) {
             'bills': bills
           }
         }, function(err) {
-          if (err) return console.log('contact addMsg error: ' + err);
+          if (err) console.log('contact addMsg error: ' + err);
           res.redirect('/api/addIndustries/' + legislator.crp_id);
         });
         // res.send(data)
@@ -582,7 +608,7 @@ router.get('/addIndustries/:crp_id', function(req, res) {
     if (!error && response.statusCode == 200) {
       var industriesObj = JSON.parse(data);
       var results = industriesObj.response.industries.industry;
-      // console.log(results);
+      //
       var industries = [];
       for (var i = 0; i < results.length; i++) {
         var industry = {
@@ -600,7 +626,7 @@ router.get('/addIndustries/:crp_id', function(req, res) {
           'industries': industries
         }
       }, function(err) {
-        if (err) return console.log('contact addMsg error: ' + err);
+        if (err) console.log('contact addMsg error: ' + err);
         res.redirect('/api/addSectors/' + cid);
       });
     }
@@ -614,7 +640,7 @@ router.get('/addSectors/:crp_id', function(req, res) {
     if (!error && response.statusCode == 200) {
       var sectorsObj = JSON.parse(data);
       var results = sectorsObj.response.sectors.sector;
-      // console.log(results);
+      //
       var sectors = [];
       for (var i = 0; i < results.length; i++) {
         var sector = {
@@ -632,7 +658,7 @@ router.get('/addSectors/:crp_id', function(req, res) {
           'sectors': sectors
         }
       }, function(err) {
-        if (err) return console.log('contact addMsg error: ' + err);
+        if (err) console.log('contact addMsg error: ' + err);
         res.redirect('/api/addContrib/' + cid);
       });
     }
@@ -646,7 +672,7 @@ router.get('/addContrib/:crp_id', function(req, res) {
     if (!error && response.statusCode == 200) {
       var contributorsObj = JSON.parse(data);
       var results = contributorsObj.response.contributors.contributor;
-      // console.log(results);
+      //
       var contributors = [];
       for (var i = 0; i < results.length; i++) {
         var contributor = {
@@ -663,7 +689,7 @@ router.get('/addContrib/:crp_id', function(req, res) {
           'contributors': contributors
         }
       }, function(err) {
-        if (err) return console.log('contact addMsg error: ' + err);
+        if (err) console.log('contact addMsg error: ' + err);
         res.redirect('/api/addMonies/' + cid);
       });
     }
@@ -691,12 +717,13 @@ router.get('/addMonies/:crp_id', function(req, res) {
           'monies': monies
         }
       }, function(err) {
-        if (err) return console.log('contact addMsg error: ' + err);
+        if (err) console.log('contact addMsg error: ' + err);
         res.redirect('/api/index/');
       });
     }
   });
 });
+
 
 // router.get('/indexAll', function(req, res) {
 //   db.collection.createIndex({
@@ -732,7 +759,7 @@ router.get('/addMonies/:crp_id', function(req, res) {
 //           }
 //           // db.legislators.remove({ _id: second._id });
 //           Legislator.findById(second._id, function(err, data) {
-//             if (err) return console.error(err);
+//             if (err) console.error(err);
 //             res.json({
 //               result: data
 //             });

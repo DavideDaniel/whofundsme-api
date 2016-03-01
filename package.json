@@ -8,6 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "axios": "^0.9.1",
     "body-parser": "~1.10.2",
     "cors": "^2.5.3",
     "express": "~4.11.1",
@@ -16,5 +17,8 @@
     "mongoose": "^4.0.1",
     "request": "^2.55.0"
   },
-  "author": "David Daniel <davidedaniel@gmail.com> (http://davidedaniel.github.io)"
+  "author": "David Daniel <davidedaniel@gmail.com> (http://davidedaniel.github.io)",
+  "devDependencies": {
+    "lodash": "^4.5.1"
+  }
 }

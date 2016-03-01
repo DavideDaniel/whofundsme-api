@@ -6,7 +6,7 @@ var sunKey = process.env.SUNLIGHT;
 var openKey = process.env.OPENSECRETS;
 var request = require('request');
 // mongodb connection and log msg to notify us
-mongoose.connect('mongodb://localhost/repApp', function(err) {
+mongoose.connect('mongodb://localhost/whofundsme', function(err) {
   if (err) {
     console.log('MongoDB connection error', err);
   } else {

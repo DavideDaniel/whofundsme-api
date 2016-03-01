@@ -156,9 +156,7 @@ router.get('/addLegislator/:last_name', function(req, res, next) {
     let crp_ids = r.data.results.map((item) => {
       return item.crp_id
     });
-    addAllData(crp_ids).then(value => {
-      console.log(value);
-    });
+    addAllData(crp_ids);
     res.json(r.data.results);
   });
 });

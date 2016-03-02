@@ -45,35 +45,60 @@ function populateLegislators() {
   for (var i = 0; i < states.length; i++) {
     var state = states[i];
     var sunStateurl = 'https://congress.api.sunlightfoundation.com/legislators?fields=&apikey=' + sunKey + '&state=' + state;
-    axios.get(sunStateurl, function(error, response, data) {
-      if (!error && response.statusCode == 200) {
-        var senatorObj = JSON.parse(data);
-        console.log(senatorObj);
-        var results = senatorObj.results;
-
-        for (var i = 0; i < results.length; i++) {
-          var legislator = new Legislator({
-            bioguide_id: results[i].bioguide_id,
-            crp_id: results[i].crp_id,
-            first_name: results[i].first_name,
-            last_name: results[i].last_name,
-            state_name: results[i].state_name,
-            state: results[i].state,
-            party: results[i].party,
-            chamber: results[i].chamber,
-            gender: results[i].gender,
-            term_start: results[i].term_start,
-            term_end: results[i].term_end,
-            website: results[i].website,
-            in_office: results[i].in_office,
-            twitter_id: results[i].twitter_id
-          });
-          legislator.save(function(err, post) {
-            if (err) console.error(err);
-          });
-        }
+    getLegislatorsInState(state).then(response =>{
+      let senatorObj = JSON.parse(response.data);
+      let results = senatorObj.results;
+      for (var i = 0; i < results.length; i++) {
+        var legislator = new Legislator({
+          bioguide_id: results[i].bioguide_id,
+          crp_id: results[i].crp_id,
+          first_name: results[i].first_name,
+          last_name: results[i].last_name,
+          state_name: results[i].state_name,
+          state: results[i].state,
+          party: results[i].party,
+          chamber: results[i].chamber,
+          gender: results[i].gender,
+          term_start: results[i].term_start,
+          term_end: results[i].term_end,
+          website: results[i].website,
+          in_office: results[i].in_office,
+          twitter_id: results[i].twitter_id
+        });
+        legislator.save(function(err, post) {
+          if (err) console.error(err);
+        });
       }
-    });
+    })
+    // axios.get(sunStateurl, function(error, response, data) {
+    //   if (!error && response.statusCode == 200) {
+    //     var senatorObj = JSON.parse(data);
+    //     console.log(senatorObj);
+    //     var results = senatorObj.results;
+    //
+    //     for (var i = 0; i < results.length; i++) {
+    //       var legislator = new Legislator({
+    //         bioguide_id: results[i].bioguide_id,
+    //         crp_id: results[i].crp_id,
+    //         first_name: results[i].first_name,
+    //         last_name: results[i].last_name,
+    //         state_name: results[i].state_name,
+    //         state: results[i].state,
+    //         party: results[i].party,
+    //         chamber: results[i].chamber,
+    //         gender: results[i].gender,
+    //         term_start: results[i].term_start,
+    //         term_end: results[i].term_end,
+    //         website: results[i].website,
+    //         in_office: results[i].in_office,
+    //         twitter_id: results[i].twitter_id
+    //       });
+    //       legislator.save(function(err, post) {
+    //         if (err) console.error(err);
+    //       });
+    //     }
+    //   }
+    // });
   }
 }
 router.get('/addAllLegislators', function(req, res, next) {
@@ -181,8 +206,7 @@ router.get('/index', function(req, res, next) {
   });
 });
 // single legislator
-
-router.get('/legislators/:id', function(req, res, next) {
+router.get('/legislators/:id', function(req, res, next) { // mongo id
   Legislator.findById(req.params.id, function(err, data) {
     if (err) console.error(err);
     res.json({
@@ -192,9 +216,15 @@ router.get('/legislators/:id', function(req, res, next) {
 });
 
 router.get('/legislatorByCrpId/:crp_id', function(req, res, next) {
-  Legislator.find({crp_id:req.params.crp_id}, function(err, data) {
+  console.log(req.params.crp_id);
+  Legislator.findOne({crp_id:req.params.crp_id}, function(err, data) {
     if (err) console.error(err);
-    console.log(data[0]);
+
+    let newstuff = getAll(req.params.crp_id);
+    newstuff.then(value => {
+      console.log(value);
+    })
+    // console.log(data[0]);
     res.json(data[0]);
   });
 });
@@ -290,26 +320,37 @@ function addBills(bioIds) {
 // function to return all data
 function getIndustries(cid){
   let year = new Date().getFullYear();
+  console.log(`getting industries for ${cid} in ${year}`);
   let industryUrl = 'http://www.opensecrets.org/api/?method=candIndustry&cid=' + cid + '&cycle=' + year + '&output=json&apikey=' + openKey;
   return axios.get({url:industryUrl,json:true});
 }
 
 function getSectors(cid){
   let year = new Date().getFullYear();
+  console.log(`getting sectors for ${cid} in ${year}`);
   let sectorUrl = 'http://www.opensecrets.org/api/?method=candSector&cid=' + cid + '&cycle=' + year + '&output=json&apikey=' + openKey;
   return axios.get({url:sectorUrl,json:true});
 }
 
 function getContributors(cid){
   let year = new Date().getFullYear();
+  console.log(`getting contributors for ${cid} in ${year}`);
   let contributorUrl = 'http://www.opensecrets.org/api/?method=candContrib&cid=' + cid + '&cycle=' + year + '&output=json&apikey=' + openKey;
   return axios.get({url:contributorUrl,json:true});
 }
 
 function getMonies(cid) {
   let year = new Date().getFullYear();
+  console.log(`getting monies for ${cid} in ${year}`);
   let summaryUrl = 'http://www.opensecrets.org/api/?method=candSummary&cid=' + cid + '&cycle=' + year + '&output=json&apikey=' + openKey;
   return axios.get({url:summaryUrl,json:true});
+}
+
+function getAll(cid) {
+  return axios.all([getIndustries(cid),getContributors(cid),getSectors(cid),getMonies(cid)])
+          .then(axios.spread((industries,contributors,sectors,monies) => {
+            return [industries.data,contributors.data,sectors.data,monies.data]
+  }))
 }
 
 function formatResponse(type, data){

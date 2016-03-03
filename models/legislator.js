@@ -10,6 +10,7 @@ var LegislatorSchema = new mongoose.Schema({
     chamber: String,
     gender: String,
     twitter_id: String,
+    facebook_id: String,
     term_start: Date,
     term_end: Date,
     website: String,

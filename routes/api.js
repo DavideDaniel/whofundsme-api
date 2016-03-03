@@ -6,13 +6,13 @@ const sunKey = process.env.SUNLIGHT;
 const openKey = process.env.OPENSECRETS;
 const request = require('request');
 const axios = require('axios');
-const _=require('lodash');
+const _ = require('lodash');
 
 const MONIES = 'MONIES';
 const CONTRIBUTORS = 'CONTRIBUTORS';
 
 // mongodb connection and log msg to notify us
-mongoose.connect('mongodb://localhost/whofundsme', function(err) {
+mongoose.connect('mongodb://localhost/whofundsmetest', function(err) {
   if (err) {
     console.log('MongoDB connection error', err);
   } else {
@@ -22,7 +22,6 @@ mongoose.connect('mongodb://localhost/whofundsme', function(err) {
 const db = mongoose.connection;
 const Legislator = require('../models/legislator.js');
 
-// just hitting the /api route and responding with nothing
 // router.get('/', function(req, res, next) {
 //   res.render('api');
 // });
@@ -33,72 +32,89 @@ function toTitleCase(str) {
   });
 }
 
-function getLegislatorsInState(state){
+// testing route
+router.get('/test/all', (req, res, next) => {
+  let legs = getLegislatorsInState(req.params.st);
+  legs.then(value => {
+    console.log({
+      results: value.data.results,
+      status: value.status
+    });
+    if (value.status == 200) {
+      let simpleRes = value.data.results.map((item) => {
+        return {
+          name: item.first_name + item.last_name,
+          state: item.state,
+          state_name: item.state_name,
+          party: item.party,
+          crp_id: item.crp_id,
+          bioguide_id: item.bioguide_id,
+          facebook_id: item.facebook_id,
+          twitter_id: item.twitter_id,
+          phone: item.phone,
+        }
+      })
+      res.json(simpleRes);
+    }
+  });
+});
+
+function getLegislatorsInState(state) {
   var sunStateurl = 'https://congress.api.sunlightfoundation.com/legislators?fields=&apikey=' + sunKey + '&state=' + state;
   return axios.get(sunStateurl)
+    .catch((response) => {
+      if (response instanceof Error) {
+        console.log('Error', response.message);
+      } else {
+        console.log(response.data);
+        console.log(response.status);
+        console.log(response.headers);
+        console.log(response.config);
+      }
+    });
 }
-
-
 
 function populateLegislators() {
   var states = ['AK', 'AL', 'AR', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY'];
   for (var i = 0; i < states.length; i++) {
-    var state = states[i];
-    var sunStateurl = 'https://congress.api.sunlightfoundation.com/legislators?fields=&apikey=' + sunKey + '&state=' + state;
-    getLegislatorsInState(state).then(response =>{
-      let senatorObj = JSON.parse(response.data);
-      let results = senatorObj.results;
-      for (var i = 0; i < results.length; i++) {
-        var legislator = new Legislator({
-          bioguide_id: results[i].bioguide_id,
-          crp_id: results[i].crp_id,
-          first_name: results[i].first_name,
-          last_name: results[i].last_name,
-          state_name: results[i].state_name,
-          state: results[i].state,
-          party: results[i].party,
-          chamber: results[i].chamber,
-          gender: results[i].gender,
-          term_start: results[i].term_start,
-          term_end: results[i].term_end,
-          website: results[i].website,
-          in_office: results[i].in_office,
-          twitter_id: results[i].twitter_id
-        });
-        legislator.save(function(err, post) {
-          if (err) console.error(err);
+    let state = states[i];
+    getLegislatorsInState(state).then(value => {
+      if (value.status == 200) {
+        value.data.results.map((item) => {
+          let legislator = {
+            bioguide_id: item.bioguide_id,
+            crp_id: item.crp_id,
+            first_name: item.first_name,
+            last_name: item.last_name,
+            state_name: item.state_name,
+            state: item.state,
+            party: item.party,
+            chamber: item.chamber,
+            gender: item.gender,
+            term_start: item.term_start,
+            term_end: item.term_end,
+            website: item.website,
+            in_office: item.in_office,
+            twitter_id: item.twitter_id,
+            facebook_id: item.facebook_id
+          }
+          Legislator.update({
+              crp_id: item.crp_id
+            }, {
+              $setOnInsert: legislator
+            }, {
+              upsert: true
+            },
+            (err, numAffected) => {
+              if (err) {
+                console.error(err);
+              }
+              console.log(numAffected);
+            }
+          )
         });
       }
-    })
-    // axios.get(sunStateurl, function(error, response, data) {
-    //   if (!error && response.statusCode == 200) {
-    //     var senatorObj = JSON.parse(data);
-    //     console.log(senatorObj);
-    //     var results = senatorObj.results;
-    //
-    //     for (var i = 0; i < results.length; i++) {
-    //       var legislator = new Legislator({
-    //         bioguide_id: results[i].bioguide_id,
-    //         crp_id: results[i].crp_id,
-    //         first_name: results[i].first_name,
-    //         last_name: results[i].last_name,
-    //         state_name: results[i].state_name,
-    //         state: results[i].state,
-    //         party: results[i].party,
-    //         chamber: results[i].chamber,
-    //         gender: results[i].gender,
-    //         term_start: results[i].term_start,
-    //         term_end: results[i].term_end,
-    //         website: results[i].website,
-    //         in_office: results[i].in_office,
-    //         twitter_id: results[i].twitter_id
-    //       });
-    //       legislator.save(function(err, post) {
-    //         if (err) console.error(err);
-    //       });
-    //     }
-    //   }
-    // });
+    });
   }
 }
 // router.get('/addAllLegislators', function(req, res, next) {
@@ -108,22 +124,23 @@ function populateLegislators() {
 // CREATE
 // search by state
 
-function addEverything(){
-  var p = Legislator.find((err,data)=>{
-    if(err) console.error(err);
-    let allLegs = _(data)
-      .filter({state:'OR'})
-      .map((item) => {
-        return item.last_name
-      }).value()
+function addEverything() {
+  var p = Legislator.find((err, data) => {
+      if (err) console.error(err);
+      let allLegs = _(data)
+        .filter({
+          state: 'OR'
+        })
+        .map((item) => {
+          return item.last_name
+        }).value()
       return allLegs
 
-  }).then(value => {
+    }).then(value => {
 
-  })
-  // p.resolve(d=>{console.log(d);})
+    })
+    // p.resolve(d=>{console.log(d);})
 }
-
 
 router.get('/addLegislatorsByState/:state', function(req, res) {
   var state = req.params.state;
@@ -188,7 +205,7 @@ router.get('/addLegislator/:last_name', function(req, res, next) {
         }
       });
     }
-  }).then(r =>{
+  }).then(r => {
     let crp_ids = r.data.results.map((item) => {
       return item.crp_id
     });
@@ -217,24 +234,28 @@ router.get('/legislators/:id', function(req, res, next) { // mongo id
 
 router.get('/legislatorByCrpId/:crp_id', function(req, res, next) {
   console.log(req.params.crp_id);
-  Legislator.find({crp_id:req.params.crp_id}, function(err, data) {
+  Legislator.find({
+    crp_id: req.params.crp_id
+  }, function(err, data) {
     if (err) console.error(err);
     // console.log(data[0]);
     res.json(data[0]);
   });
 });
 router.get('/addAllDataByCrpId/:crp_id', function(req, res, next) {
-  Legislator.find({crp_id:req.params.crp_id}, function(err, data) {
+  Legislator.find({
+    crp_id: req.params.crp_id
+  }, function(err, data) {
     if (err) console.error(err);
     var cids = [req.params.crp_id];
-    var promised = new Promise(function(resolve,reject){
+    var promised = new Promise(function(resolve, reject) {
       try {
         resolve(addAllData(cids));
       } catch (e) {
         reject(e)
       }
     })
-    promised.then(function(data){
+    promised.then(function(data) {
       var result = data[0]
       console.log(typeof result, typeof data);
       res.json(result);
@@ -252,7 +273,7 @@ router.get('/legislators*', function(req, res, next) {
   });
 });
 
-function getBills(bio_id){
+function getBills(bio_id) {
   let billsUrl = 'https://congress.api.sunlightfoundation.com/bills/search/?sponsor_id=' + bio_id + '&fields=official_title,introduced_on,history.active,history.enacted,history.vetoed,keywords,bill_id&apikey=' + sunKey
   return axios.get(billsUrl)
 }
@@ -313,53 +334,65 @@ function addBills(bioIds) {
   console.log('bills done');
 };
 // function to return all data
-function getIndustries(cid){
+function getIndustries(cid) {
   let year = new Date().getFullYear();
   console.log(`getting industries for ${cid} in ${year}`);
   let industryUrl = 'http://www.opensecrets.org/api/?method=candIndustry&cid=' + cid + '&cycle=' + year + '&output=json&apikey=' + openKey;
-  return axios.get({url:industryUrl,json:true});
+  return axios.get({
+    url: industryUrl,
+    json: true
+  });
 }
 
-function getSectors(cid){
+function getSectors(cid) {
   let year = new Date().getFullYear();
   console.log(`getting sectors for ${cid} in ${year}`);
   let sectorUrl = 'http://www.opensecrets.org/api/?method=candSector&cid=' + cid + '&cycle=' + year + '&output=json&apikey=' + openKey;
-  return axios.get({url:sectorUrl,json:true});
+  return axios.get({
+    url: sectorUrl,
+    json: true
+  });
 }
 
-function getContributors(cid){
+function getContributors(cid) {
   let year = new Date().getFullYear();
   console.log(`getting contributors for ${cid} in ${year}`);
   let contributorUrl = 'http://www.opensecrets.org/api/?method=candContrib&cid=' + cid + '&cycle=' + year + '&output=json&apikey=' + openKey;
-  return axios.get({url:contributorUrl,json:true});
+  return axios.get({
+    url: contributorUrl,
+    json: true
+  });
 }
 
 function getMonies(cid) {
   let year = new Date().getFullYear();
   console.log(`getting monies for ${cid} in ${year}`);
   let summaryUrl = 'http://www.opensecrets.org/api/?method=candSummary&cid=' + cid + '&cycle=' + year + '&output=json&apikey=' + openKey;
-  return axios.get({url:summaryUrl,json:true});
+  return axios.get({
+    url: summaryUrl,
+    json: true
+  });
 }
 
 function getAll(cid) {
-  return axios.all([getIndustries(cid),getContributors(cid),getSectors(cid),getMonies(cid)])
-          .then(axios.spread((industries,contributors,sectors,monies) => {
-            return [industries.data,contributors.data,sectors.data,monies.data]
-  }))
+  return axios.all([getIndustries(cid), getContributors(cid), getSectors(cid), getMonies(cid)])
+    .then(axios.spread((industries, contributors, sectors, monies) => {
+      return [industries.data, contributors.data, sectors.data, monies.data]
+    }))
 }
 
-function formatResponse(type, data){
-  if (type===MONIES) {
+function formatResponse(type, data) {
+  if (type === MONIES) {
 
   }
   let result = data.response.summary['@attributes'];
-      let monies = {
-        total_reciepts: result.total,
-        total_spent: result.spent,
-        cash_on_hand: result.cash_on_hand,
-        debt: result.debt,
-        date_last_filed: result.last_updated
-      };
+  let monies = {
+    total_reciepts: result.total,
+    total_spent: result.spent,
+    cash_on_hand: result.cash_on_hand,
+    debt: result.debt,
+    date_last_filed: result.last_updated
+  };
 }
 
 function addAllData(cids) {
@@ -811,7 +844,6 @@ router.get('/addMonies/:crp_id', function(req, res) {
   });
 });
 
-
 // router.get('/indexAll', function(req, res) {
 //   db.collection.createIndex({
 //     crp_id: 1,
@@ -866,4 +898,3 @@ router.delete('/legislators/:id', function(req, res, next) {
   });
 });
 module.exports = router;
-

@@ -101,10 +101,10 @@ function populateLegislators() {
     // });
   }
 }
-router.get('/addAllLegislators', function(req, res, next) {
-  populateLegislators();
-  res.json('done');
-});
+// router.get('/addAllLegislators', function(req, res, next) {
+//   populateLegislators();
+//   res.json('done');
+// });
 // CREATE
 // search by state
 
@@ -217,13 +217,8 @@ router.get('/legislators/:id', function(req, res, next) { // mongo id
 
 router.get('/legislatorByCrpId/:crp_id', function(req, res, next) {
   console.log(req.params.crp_id);
-  Legislator.findOne({crp_id:req.params.crp_id}, function(err, data) {
+  Legislator.find({crp_id:req.params.crp_id}, function(err, data) {
     if (err) console.error(err);
-
-    let newstuff = getAll(req.params.crp_id);
-    newstuff.then(value => {
-      console.log(value);
-    })
     // console.log(data[0]);
     res.json(data[0]);
   });

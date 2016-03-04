@@ -41,9 +41,9 @@ var LegislatorSchema = new mongoose.Schema({
         money_from_indivs: Number,
         money_from_pacs: Number
     }],
-    monies: {
-        total_reciepts: Number,
-        total_spent: Number,
+    summary: {
+        total: Number,
+        spent: Number,
         cash_on_hand: Number,
         debt: Number,
         date_last_filed: Date

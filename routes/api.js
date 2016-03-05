@@ -16,7 +16,7 @@ const getFinances = require('../utils/axiosFuncs').getFinances;
 const axiosCatch = require('../utils/axiosFuncs').axiosCatch;
 const sequenceRecursive = require('../utils/utils').sequenceRecursive;
 // mongodb connection and log msg to notify us
-mongoose.connect('mongodb://localhost/whofundsmetest', function(err) {
+mongoose.connect('mongodb://localhost/whofundsme', function(err) {
   if (err) {
     console.log('MongoDB connection error', err);
   } else {
@@ -99,7 +99,7 @@ router.get('/addLegislatorsByState/:state', function(req, res) {
 // api with query paramaters (eg: /legislators?state=OR&chamber=senate&party=D)
 router.get('/legislators*', function(req, res, next) {
   var query = req.query;
-  var legislators = Legislator.find(query, function(err, data) {
+  var legislators = Legislator.find(query,{_id:0}, function(err, data) {
     if (err) console.error(err);
     console.log(query, data.length);
     res.json(data);

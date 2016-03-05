@@ -4,17 +4,9 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const request = require('request');
-const axios = require('axios');
-const MONIES = 'MONIES';
-const CONTRIBUTORS = 'CONTRIBUTORS';
-const populateBills = require('../utils/apiBuilder').populateBills;
-const populateFinances = require('../utils/apiBuilder').populateFinances;
-const populateLegislators = require('../utils/apiBuilder').populateLegislators;
 const populateAll = require('../utils/apiBuilder').populateAll;
-const toTitleCase = require('../utils/utils').toTitleCase;
-const getFinances = require('../utils/axiosFuncs').getFinances;
 const axiosCatch = require('../utils/axiosFuncs').axiosCatch;
-const sequenceRecursive = require('../utils/utils').sequenceRecursive;
+
 // mongodb connection and log msg to notify us
 mongoose.connect('mongodb://localhost/whofundsme', function(err) {
   if (err) {
@@ -32,10 +24,10 @@ const Legislator = require('../models/legislator.js');
 // })
 
 // testing route
-router.get('/test/allData', (req, res, next) => {
+router.get('/test/add/allData', (req, res, next) => {
   populateAll().then(value => {
     console.log(value);
-  });
+  }).catch(err => {axiosCatch(err);});
 
   // getFinances(req.params.cid).then(response => {console.log(response)}).catch(response=>{axiosCatch(response)});
   // var promised = new Promise((resolve, reject) => {
@@ -77,21 +69,21 @@ router.get('/test/allData', (req, res, next) => {
 
 // CREATE
 // by state
-router.get('/addLegislatorsByState/:state', function(req, res) {
-  var state = [req.params.state];
-  let legs = populateLegislators(state);
-  console.log(legs);
-  legs.then(() => {
-    Legislator.find({
-      state: state
-    }, function(err, data) {
-      if (err) return next(err);
-      res.json({
-        results: data
-      });
-    });
-  });
-});
+// router.get('/addLegislatorsByState/:state', function(req, res) {
+//   var state = [req.params.state];
+//   let legs = populateLegislators(state);
+//   console.log(legs);
+//   legs.then(() => {
+//     Legislator.find({
+//       state: state
+//     }, function(err, data) {
+//       if (err) return next(err);
+//       res.json({
+//         results: data
+//       });
+//     });
+//   });
+// });
 
 // router.get('/all')
 
@@ -106,14 +98,14 @@ router.get('/legislators*', function(req, res, next) {
   });
 });
 
-router.get('/index', function(req, res, next) {
-  Legislator.find(function(err, data) {
-    if (err) return next(err);
-    res.json({
-      results: data
-    });
-  });
-});
+// router.get('/index', function(req, res, next) {
+//   Legislator.find(function(err, data) {
+//     if (err) return next(err);
+//     res.json({
+//       results: data
+//     });
+//   });
+// });
 
 // READ
 

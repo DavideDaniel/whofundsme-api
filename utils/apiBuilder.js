@@ -6,54 +6,55 @@ const sequenceRecursive = require('./utils').sequenceRecursive;
 const rejectWith = require('./utils').rejectWith;
 const Legislator = require('../models/legislator.js');
 
-exports.populateLegislators = (states) => {
+const populateLegislators = (state) => {
   return new Promise((resolve, reject) => {
     let cids = [];
     let bio_ids = [];
-    sequenceRecursive(states, (state) => {
-      return getLegislatorsInState(state).then(value => {
-        console.log(value, 'inside get legs');
-        if (value.status == 200) {
-          value.data.results.map((item) => {
-            let legislator = {
-              bioguide_id: item.bioguide_id,
-              crp_id: item.crp_id,
-              first_name: item.first_name,
-              last_name: item.last_name,
-              state_name: item.state_name,
-              state: item.state,
-              party: item.party,
-              chamber: item.chamber,
-              gender: item.gender,
-              term_start: item.term_start,
-              term_end: item.term_end,
-              website: item.website,
-              in_office: item.in_office,
-              twitter_id: item.twitter_id,
-              facebook_id: item.facebook_id
-            }
-            Legislator.update({
-                crp_id: item.crp_id
-              }, {
-                $setOnInsert: legislator
-              }, {
-                upsert: true
-              },
-              (err, numAffected) => {
-                if (err) {
-                  console.error(err);
-                }
-                cids.push(item.crp_id);
-                bio_ids.push(item.bioguide_id)
-                // console.log(cids,bio_ids);
-                resolve({cids:cids,bio_ids:bio_ids});
-                console.log(state, numAffected);
+    return getLegislatorsInState(state).then(value => {
+      console.log(value, 'inside get legs');
+      if (value.status == 200) {
+        value.data.results.map((item) => {
+          let legislator = {
+            bioguide_id: item.bioguide_id,
+            crp_id: item.crp_id,
+            first_name: item.first_name,
+            last_name: item.last_name,
+            state_name: item.state_name,
+            state: item.state,
+            party: item.party,
+            chamber: item.chamber,
+            gender: item.gender,
+            term_start: item.term_start,
+            term_end: item.term_end,
+            website: item.website,
+            in_office: item.in_office,
+            twitter_id: item.twitter_id,
+            facebook_id: item.facebook_id
+          }
+          Legislator.update({
+              crp_id: item.crp_id
+            }, {
+              $setOnInsert: legislator
+            }, {
+              upsert: true
+            },
+            (err, numAffected) => {
+              if (err) {
+                console.error(err);
               }
-            )
-          });
-        } else {
-          console.log('something bad happened');
-        }
+              console.log(state, numAffected);
+            }
+          )
+          cids.push(item.crp_id);
+          bio_ids.push(item.bioguide_id)
+        });
+      } else {
+        console.log('something bad happened');
+      }
+      console.log('resolving get legs');
+      resolve({
+        cids: cids,
+        bio_ids: bio_ids
       });
     }).catch(err => {
       rejectWith(err);
@@ -61,7 +62,7 @@ exports.populateLegislators = (states) => {
   });
 }
 
-exports.populateBills = (bio_ids) => {
+const populateBills = (bio_ids) => {
   return new Promise((resolve, reject) => {
     sequenceRecursive(bio_ids, (bio_id) => {
       return getBills(bio_id).then(value => {
@@ -85,14 +86,10 @@ exports.populateBills = (bio_ids) => {
             }
           }, (err) => {
             if (err) {
-              reject(err);
+              rejectWith(err);
             }
-            console.log({
-              bio_id: bio_id,
-              bills: bills
-            });
           })
-          // resolve(bio_ids);
+          resolve();
         } else {
           console.log('something bad happened');
         }
@@ -104,13 +101,11 @@ exports.populateBills = (bio_ids) => {
   });
 }
 
-exports.populateFinances = (cids) => {
+const populateFinances = (cids) => {
   return new Promise((resolve, reject) => {
     let chain = sequenceRecursive(cids, (cid) => {
       console.log('inside rec', cid);
       return getFinances(cid).then(value => {
-        console.log('somthing');
-        console.log(value)
         let summary = {
           total: value.summary.total,
           spent: value.summary.spent,
@@ -155,16 +150,24 @@ exports.populateFinances = (cids) => {
               console.log(err);
               rejectWith(err);
             }
-
-            console.log({
-              crp_id: cid,
-              summary: summary
-            });
           }) // updated finished
-          // resolve(cids);
+          // resolve(chain);
+        resolve();
       });
     }).catch(err => {
       rejectWith(err);
     });
+  });
+}
+
+exports.populateAll = () => {
+  let states = ['AK', 'DD', 'AL', 'AR', 'AZ', 'CA', 'CO', 'CT', 'DC', 'DE', 'FL', 'GA', 'GU', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 'ME', 'MH', 'MI', 'MN', 'MO', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'PW', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VA', 'VI', 'VT', 'WA', 'WI', 'WV', 'WY'];
+  return sequenceRecursive(states, (state) => {
+    populateLegislators(state).then(value => {
+      populateBills(value.bio_ids)
+      populateFinances(value.cids)
+    })
+  }).catch(err => {
+    rejectWith(err)
   });
 }

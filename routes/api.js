@@ -5,6 +5,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const request = require('request');
 const populateAll = require('../utils/apiBuilder').populateAll;
+const populateState = require('../utils/apiBuilder').populateState;
 const axiosCatch = require('../utils/axiosFuncs').axiosCatch;
 
 // mongodb connection and log msg to notify us
@@ -26,8 +27,15 @@ const Legislator = require('../models/legislator.js');
 // testing route
 router.get('/test/add/allData', (req, res, next) => {
   populateAll().then(value => {
-    console.log(value);
-  }).catch(err => {axiosCatch(err);});
+    Legislator.find(function(err, data) {
+        if (err) return next(err);
+        res.json({
+          results: data
+        });
+      });
+  }).catch(err => {
+    axiosCatch(err);
+  });
 
   // getFinances(req.params.cid).then(response => {console.log(response)}).catch(response=>{axiosCatch(response)});
   // var promised = new Promise((resolve, reject) => {

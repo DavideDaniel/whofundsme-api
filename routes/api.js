@@ -69,21 +69,21 @@ router.get('/test/add/allData', (req, res, next) => {
 
 // CREATE
 // by state
-// router.get('/addLegislatorsByState/:state', function(req, res) {
-//   var state = [req.params.state];
-//   let legs = populateLegislators(state);
-//   console.log(legs);
-//   legs.then(() => {
-//     Legislator.find({
-//       state: state
-//     }, function(err, data) {
-//       if (err) return next(err);
-//       res.json({
-//         results: data
-//       });
-//     });
-//   });
-// });
+router.get('/addDataByState/:state', function(req, res) {
+  var state = [req.params.state];
+  let legs = populateState(state);
+  console.log(legs);
+  legs.then(() => {
+    Legislator.find({
+      state: state
+    }, function(err, data) {
+      if (err) return next(err);
+      res.json({
+        results: data
+      });
+    });
+  });
+});
 
 // router.get('/all')
 

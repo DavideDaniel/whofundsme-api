@@ -171,3 +171,12 @@ exports.populateAll = () => {
     rejectWith(err)
   });
 }
+
+exports.populateState = (state) => {
+  return populateLegislators(state).then(value => {
+    populateBills(value.bio_ids)
+    populateFinances(value.cids)
+  }).catch(err => {
+    rejectWith(err)
+  });
+}

@@ -17,8 +17,5 @@
     "mongoose": "^4.0.1",
     "request": "^2.55.0"
   },
-  "author": "David Daniel <davidedaniel@gmail.com> (http://davidedaniel.github.io)",
-  "devDependencies": {
-    "lodash": "^4.5.1"
-  }
+  "author": "David Daniel <davidedaniel@gmail.com> (http://davidedaniel.github.io)"
 }

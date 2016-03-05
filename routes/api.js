@@ -102,7 +102,12 @@ router.get('/legislators*', function(req, res, next) {
   var legislators = Legislator.find(query,{_id:0}, function(err, data) {
     if (err) console.error(err);
     console.log(query, data.length);
+    if (data.length > 1){
     res.json(data);
+  } else {
+    res.json(data[0]);
+  }
+
   });
 });
 

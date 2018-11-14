@@ -5,6 +5,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const request = require('request');
 const populateAll = require('../utils/apiBuilder').populateAll;
+const populateFinances = require('../utils/apiBuilder').populateFinances;
 const populateState = require('../utils/apiBuilder').populateState;
 const axiosCatch = require('../utils/axiosFuncs').axiosCatch;
 
@@ -19,10 +20,6 @@ mongoose.connect('mongodb://localhost/whofundsme', function(err) {
 
 const db = mongoose.connection;
 const Legislator = require('../models/legislator.js');
-
-// router.get('/', function(req, res, next) {
-//   res.render('api');
-// })
 
 // testing route
 router.get('/test/add/allData', (req, res, next) => {
@@ -93,8 +90,6 @@ router.get('/addDataByState/:state', function(req, res) {
   });
 });
 
-// router.get('/all')
-
 // READ
 // api with query paramaters (eg: /legislators?state=OR&chamber=senate&party=D)
 router.get('/legislators*', function(req, res, next) {
@@ -133,26 +128,24 @@ router.get('/legislators*', function(req, res, next) {
 //   });
 // });
 
-// router.get('/addAllDataByCrpId/:crp_id', function(req, res, next) {
-//   Legislator.find({
-//     crp_id: req.params.crp_id
-//   }, function(err, data) {
-//     if (err) console.error(err);
-//     var cids = [req.params.crp_id];
-//     var promised = new Promise(function(resolve, reject) {
-//       try {
-//         resolve(addAllData(cids));
-//       } catch (e) {
-//         reject(e)
-//       }
-//     })
-//     promised.then(function(data) {
-//       var result = data[0]
-//       console.log(typeof result, typeof data);
-//       res.json(result);
-//     });
-//   });
-// });
+router.get('/addAllDataByCrpId/:crp_id', function(req, res, next) {
+  Legislator.find({
+    crp_id: req.params.crp_id
+  }, function(err, data) {
+    if (err) console.error(err);
+    var cids = [req.params.crp_id];
+    var promised = new Promise(function(resolve, reject) {
+        resolve(populateFinances(cids))
+    });
+
+    promised.then(function(data) {
+      console.log(promised);
+      console.log(data);
+      var result = data[0]
+      res.json(result);
+    });
+  });
+});
 
 // function addBills(bioIds) {
 //   console.log('inside getbills w ' + bioIds.length);

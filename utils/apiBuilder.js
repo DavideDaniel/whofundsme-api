@@ -101,7 +101,7 @@ const populateBills = (bio_ids) => {
   });
 }
 
-const populateFinances = (cids) => {
+const populateFinances = exports.populateFinances = (cids) => {
   return new Promise((resolve, reject) => {
     let chain = sequenceRecursive(cids, (cid) => {
       console.log('inside rec', cid);
@@ -152,7 +152,8 @@ const populateFinances = (cids) => {
             }
           }) // updated finished
           // resolve(chain);
-        resolve();
+          console.log(chain);
+        resolve({summary:summary,sectors:sectors,industries:industries,contributors:contributors});
       });
     }).catch(err => {
       rejectWith(err);
@@ -180,3 +181,4 @@ exports.populateState = (state) => {
     rejectWith(err)
   });
 }
+

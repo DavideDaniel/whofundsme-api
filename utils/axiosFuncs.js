@@ -7,8 +7,6 @@ function axiosCatch(response){
   if (response instanceof Error) {} else {
     console.log(response.data);
     console.log(response.status);
-    // console.log(response.headers);
-    // console.log(response.config);
   }
 }
 
@@ -68,10 +66,10 @@ exports.getFinances = (cid) => {
   return axios.all([getIndustries(cid), getContributors(cid), getSectors(cid), getSummary(cid)]).then(axios.spread(
       (industries,contributors,sectors,summary)=>{
         return {
-          industries:industries.data.response.industries.industry,
-          contributors:contributors.data.response.contributors.contributor,
-          sectors:sectors.data.response.sectors.sector,
-          summary:summary.data.response.summary['@attributes']
+          industries:industries.data.response.industries.industry || [],
+          contributors:contributors.data.response.contributors.contributor || [],
+          sectors:sectors.data.response.sectors.sector || [],
+          summary:summary.data.response.summary['@attributes'] || {}
         }
       }
   ))

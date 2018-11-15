@@ -1,0 +1,130 @@
+interface Member {
+  bio_id: ID! @unique
+  short_title: String
+  first_name: String!
+  middle_name: String
+  last_name: String!
+  suffix: String
+  gender: String
+  party: String
+  twitter_account: String
+  facebook_account: String
+  youtube_account: String
+  govtrack_id: String
+  cspan_id: String
+  votesmart_id: String
+  icpsr_id: String
+  crp_id: String!
+  fec_candidate_id: String
+  url: String
+  rss_url: String
+  contact_form: String
+  in_office: Boolean
+  next_election: String
+  total_votes: Int
+  missed_votes: Int
+  total_present: Int
+  office: String
+  phone: String
+  fax: String
+  state: String!
+  state_rank: String
+  lis_id: String
+  missed_votes_pct: Float
+  votes_with_party_pct: Float
+}
+
+type Cosponsors_By_Party {
+  D: Int
+  I: Int
+  R: Int
+}
+
+type Bill {
+  bill_id: ID!
+  bill_type: String
+  title: String!
+  short_title: String
+  sponsor_id: String
+  sponsor_name: String
+  sponsor_state: String
+  sponsor_party: String
+  house_passage: Boolean
+  senate_passage: Boolean
+  enacted: Boolean
+  vetoed: Boolean
+  cosponsors: Int
+  cosponsors_by_party: Cosponsors_By_Party
+  committees: String
+  primary_subject: String!
+}
+
+type Summary {
+  total: String
+  spent: String
+  cash_on_hand: String
+  debt: String
+}
+
+type Sector {
+  sector_name: String!
+  sector_code: ID!
+  indivs: String
+  pacs: String
+}
+
+type Industry {
+  industry_name: String!
+  industry_code: ID!
+  indivs: String
+  pacs: String
+  total: String
+}
+
+type Contributor {
+  org_name: ID!
+  indivs: String
+  pacs: String
+  total: String
+}
+
+type Legislator implements Member {
+  bio_id: ID! @unique
+  short_title: String
+  first_name: String!
+  middle_name: String
+  last_name: String!
+  suffix: String
+  gender: String
+  party: String
+  twitter_account: String
+  facebook_account: String
+  youtube_account: String
+  govtrack_id: String
+  cspan_id: String
+  votesmart_id: String
+  icpsr_id: String
+  crp_id: String!
+  fec_candidate_id: String
+  url: String
+  rss_url: String
+  contact_form: String
+  in_office: Boolean
+  next_election: String
+  total_votes: Int
+  missed_votes: Int
+  total_present: Int
+  office: String
+  phone: String
+  fax: String
+  state: String
+  state_rank: String
+  lis_id: String
+  missed_votes_pct: Float
+  votes_with_party_pct: Float
+  bills: [Bill!]!
+  industries: [Industry!]!
+  sectors: [Sector!]!
+  contributors: [Contributor!]!
+  summary: Summary
+}

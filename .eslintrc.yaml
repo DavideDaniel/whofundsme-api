@@ -1,0 +1,21 @@
+parser: babel-eslint
+env:
+  commonjs: true
+  es6: true
+  node: true
+  jest: true
+extends: airbnb-base
+plugins:
+  - import
+  - json
+rules:
+  func-names: error
+  import/extensions:
+  - error
+  - json: ignorePackages
+  import/no-extraneous-dependencies:
+  - error
+  - packageDir: "./package.json"
+globals:
+  jsdom: true
+  

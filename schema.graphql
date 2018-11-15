@@ -1,0 +1,6 @@
+# import Legislator from './generated/schema/prisma.graphql'
+
+type Query {
+  legislators(searchString: String): [Legislator!]!
+  legislator(id: ID!): Legislator
+}

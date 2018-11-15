@@ -1,76 +1,108 @@
-'use strict';
-const axios = require('axios');
-const sunKey = process.env.SUNLIGHT;
-const openKey = process.env.OPENSECRETS;
 
-function axiosCatch(response){
-  if (response instanceof Error) {} else {
-    console.log(response.data);
-    console.log(response.status);
-  }
+
+const env = require('dotenv').config();
+const fetch = require('./fetch-client');
+
+const fs = require('fs');
+const openKey = env.parsed.OPENSECRETS;
+const CONGRESS_API_PATH = 'https://api.propublica.org/congress/v1';
+const OPENSECRETS_API_PATH = 'http://www.opensecrets.org/api';
+const ATTRIBUTES = '@attributes';
+
+if (env.error) {
+  throw env.error;
 }
 
-exports.getLegislatorsInState = (state) => {
-  console.log(`request for ${state}`);
-  var sunStateurl = 'https://congress.api.sunlightfoundation.com/legislators?per_page=all&fields=&apikey=' + sunKey + '&state=' + state;
-  return axios.get(sunStateurl)
-    .catch((response) => {
-      axiosCatch(response);
-    });
-}
+// https://api.propublica.org/congress/v1/${congress}/${chamber}/members.json
+const getCongressChamber = (chamber = 'senate', congress = '115') => {
+  
+  const legsUrl = `${CONGRESS_API_PATH}/${congress}/${chamber}/members.json`;
+  console.log(legsUrl)
+  return fetch(legsUrl)
+};
 
-exports.getBills = (bio_id) => {
-  let billsUrl = 'https://congress.api.sunlightfoundation.com/bills/search/?sponsor_id=' + bio_id + '&fields=official_title,introduced_on,history.active,history.enacted,history.vetoed,keywords,bill_id&apikey=' + sunKey
-  return axios.get(billsUrl).catch((response) => {
-    axiosCatch(response);
-  });
-}
+// GET https://api.propublica.org/congress/v1/members/{member-id}/bills/{type}.json
+const getBills = (memberId, type ='cosponsored') => {
+  const billsUrl = `${CONGRESS_API_PATH}/members/${memberId}/bills/cosponsored.json`;
+  return fetch(billsUrl);
+};
 
 function getIndustries(cid) {
-  let year = new Date().getFullYear();
+  const year = new Date().getFullYear();
   console.log(`getting industries for ${cid} in ${year}`);
-  let industryUrl = 'http://www.opensecrets.org/api/?method=candIndustry&cid=' + cid + '&cycle=' + year + '&output=json&apikey=' + openKey;
-  return axios.get(industryUrl).catch((response) => {
-    axiosCatch(response);
-  });
+  const industryUrl = `${OPENSECRETS_API_PATH}/?method=candIndustry&cid=${cid}&cycle=${year}&output=json&apikey=${openKey}`;
+  return fetch(industryUrl);
 }
 
 function getSectors(cid) {
-  let year = new Date().getFullYear();
+  const year = new Date().getFullYear();
   console.log(`getting sectors for ${cid} in ${year}`);
-  let sectorUrl = 'http://www.opensecrets.org/api/?method=candSector&cid=' + cid + '&cycle=' + year + '&output=json&apikey=' + openKey;
-  return axios.get(sectorUrl).catch((response) => {
-    axiosCatch(response);
-  });
+  const sectorUrl = `${OPENSECRETS_API_PATH}/?method=candSector&cid=${cid}&cycle=${year}&output=json&apikey=${openKey}`;
+  return fetch(sectorUrl);
 }
 
 function getContributors(cid) {
-  let year = new Date().getFullYear();
+  const year = new Date().getFullYear();
   console.log(`getting contributors for ${cid} in ${year}`);
-  let contributorUrl = 'http://www.opensecrets.org/api/?method=candContrib&cid=' + cid + '&cycle=' + year + '&output=json&apikey=' + openKey;
-  return axios.get(contributorUrl).catch((response) => {
-    axiosCatch(response);
-  });
+  const contributorUrl = `${OPENSECRETS_API_PATH}/?method=candContrib&cid=${cid}&cycle=${year}&output=json&apikey=${openKey}`;
+  return fetch(contributorUrl);
 }
 
 function getSummary(cid) {
-  let year = new Date().getFullYear();
+  const year = new Date().getFullYear();
   console.log(`getting monies for ${cid} in ${year}`);
-  let summaryUrl = 'http://www.opensecrets.org/api/?method=candSummary&cid=' + cid + '&cycle=' + year + '&output=json&apikey=' + openKey;
-  return axios.get(summaryUrl).catch((response) => {
-    axiosCatch(response);
-  });
+  const summaryUrl = `${OPENSECRETS_API_PATH}/?method=candSummary&cid=${cid}&cycle=${year}&output=json&apikey=${openKey}`;
+  return fetch(summaryUrl);
 }
 
-exports.getFinances = (cid) => {
-  return axios.all([getIndustries(cid), getContributors(cid), getSectors(cid), getSummary(cid)]).then(axios.spread(
-      (industries,contributors,sectors,summary)=>{
-        return {
-          industries:industries.data.response.industries.industry || [],
-          contributors:contributors.data.response.contributors.contributor || [],
-          sectors:sectors.data.response.sectors.sector || [],
-          summary:summary.data.response.summary['@attributes'] || {}
-        }
-      }
-  ))
+const getFinances = (cid, id) => Promise.all([getIndustries(cid), getContributors(cid), getSectors(cid), getSummary(cid), getBills(id)])
+  .then(([industries, contributors, sectors, summary, bills]) => ({
+    industries: (industries.response.industries.industry || []).map(d => d[ATTRIBUTES]).filter(x => x),
+    contributors: (contributors.response.contributors.contributor || []).map(d => d[ATTRIBUTES]).filter(x => x),
+    sectors: (sectors.response.sectors.sector || []).map(d => d[ATTRIBUTES]).filter(x => x),
+    summary: summary.response.summary[ATTRIBUTES] || {},
+    bills: bills.results[0] && bills.results[0].bills || [],
+  }),
+);
+
+// getCongressChamber()
+//   .then(({ results }) => results[0].members.filter(({ state }) => state === 'OR'))
+//   .then(results => {
+//     const sectorPromises = results.map(({ crp_id }) => getSectors(crp_id));
+//     const industryPromises = results.map(({ crp_id }) => getIndustries(crp_id));
+//     const promises = [...sectorPromises, ...industryPromises].filter(x => x);
+//     return Promise.all(promises)
+//       .then(data => console.log(data))
+//   })
+
+// getCongressChamber('house')
+// .then(({ results }) => results[0].members.filter(({ state }) => state === 'OR'))
+// .then(results => {
+//     const sectorPromises = results.map(({ crp_id }) => getSectors(crp_id));
+//     const industryPromises = results.map(({ crp_id }) => getIndustries(crp_id));
+//     const promises = [...sectorPromises, ...industryPromises].filter(x => x);
+//     return Promise.all(promises)
+//       .then(data => console.log(data))
+// })
+
+function createMock() {
+  const currState = 'OR';
+  return getCongressChamber()
+    .then(({ results }) => results[0].members.filter(({ state }) => state === currState))
+    .then(async results => {
+      const data = await Promise.all(results.map(({ crp_id, id }) => getFinances(crp_id, id)));
+      console.log('data', data);
+      const fileName = `${currState}.json`;
+      fs.writeFile(fileName, JSON.stringify(data, null, 2), err => {
+        if(err) throw err;
+        console.log('Wrote '+fileName);
+      });
+    });
+}
+
+async function addLegislators(state) {
+  const legislators = await Promise.all([getCongressChamber(), getCongressChamber('house')]);
+  legislators.map(legislator => {
+    
+  })
 }

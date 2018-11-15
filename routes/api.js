@@ -1,6 +1,5 @@
-'use strict';
-
 const express = require('express');
+
 const router = express.Router();
 const mongoose = require('mongoose');
 const request = require('request');
@@ -10,7 +9,7 @@ const populateState = require('../utils/apiBuilder').populateState;
 const axiosCatch = require('../utils/axiosFuncs').axiosCatch;
 
 // mongodb connection and log msg to notify us
-mongoose.connect('mongodb://localhost/whofundsme', function(err) {
+mongoose.connect('mongodb://localhost/whofundsme', (err) => {
   if (err) {
     console.log('MongoDB connection error', err);
   } else {
@@ -23,14 +22,14 @@ const Legislator = require('../models/legislator.js');
 
 // testing route
 router.get('/test/add/allData', (req, res, next) => {
-  populateAll().then(value => {
-    Legislator.find(function(err, data) {
-        if (err) return next(err);
-        res.json({
-          results: data
-        });
+  populateAll().then((value) => {
+    Legislator.find((err, data) => {
+      if (err) return next(err);
+      res.json({
+        results: data,
       });
-  }).catch(err => {
+    });
+  }).catch((err) => {
     axiosCatch(err);
   });
 
@@ -74,17 +73,17 @@ router.get('/test/add/allData', (req, res, next) => {
 
 // CREATE
 // by state
-router.get('/addDataByState/:state', function(req, res) {
-  var state = [req.params.state];
-  let legs = populateState(state);
+router.get('/addDataByState/:state', (req, res) => {
+  const state = [req.params.state];
+  const legs = populateState(state);
   console.log(legs);
   legs.then(() => {
     Legislator.find({
-      state: state
-    }, function(err, data) {
+      state,
+    }, (err, data) => {
       if (err) return next(err);
       res.json({
-        results: data
+        results: data,
       });
     });
   });
@@ -92,17 +91,16 @@ router.get('/addDataByState/:state', function(req, res) {
 
 // READ
 // api with query paramaters (eg: /legislators?state=OR&chamber=senate&party=D)
-router.get('/legislators*', function(req, res, next) {
-  var query = req.query;
-  var legislators = Legislator.find(query,{_id:0}, function(err, data) {
+router.get('/legislators*', (req, res, next) => {
+  const query = req.query;
+  const legislators = Legislator.find(query, { _id: 0 }, (err, data) => {
     if (err) console.error(err);
     console.log(query, data.length);
-    if (data.length > 1){
-    res.json(data);
-  } else {
-    res.json(data[0]);
-  }
-
+    if (data.length > 1) {
+      res.json(data);
+    } else {
+      res.json(data[0]);
+    }
   });
 });
 
@@ -128,20 +126,20 @@ router.get('/legislators*', function(req, res, next) {
 //   });
 // });
 
-router.get('/addAllDataByCrpId/:crp_id', function(req, res, next) {
+router.get('/addAllDataByCrpId/:crp_id', (req, res, next) => {
   Legislator.find({
-    crp_id: req.params.crp_id
-  }, function(err, data) {
+    crp_id: req.params.crp_id,
+  }, (err, data) => {
     if (err) console.error(err);
-    var cids = [req.params.crp_id];
-    var promised = new Promise(function(resolve, reject) {
-        resolve(populateFinances(cids))
-    });
+    const cids = [req.params.crp_id];
+    const promised = new Promise(((resolve, reject) => {
+      resolve(populateFinances(cids));
+    }));
 
-    promised.then(function(data) {
+    promised.then((data) => {
       console.log(promised);
       console.log(data);
-      var result = data[0]
+      const result = data[0];
       res.json(result);
     });
   });
@@ -713,8 +711,8 @@ router.get('/addAllDataByCrpId/:crp_id', function(req, res, next) {
 //   });
 // })
 
-router.delete('/legislators/:id', function(req, res, next) {
-  Legislator.findByIdAndRemove(req.params.id, req.body, function(err, post) {
+router.delete('/legislators/:id', (req, res, next) => {
+  Legislator.findByIdAndRemove(req.params.id, req.body, (err, post) => {
     if (err) return next(err);
     res.json(post);
   });
